@@ -1,0 +1,121 @@
+---
+title: "Cell Identification"
+author: "hongc2@ccf.org"
+date: "1/16/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = TRUE, eval = TRUE, include = TRUE)
+```
+
+Load R variables worked in the previous step,
+```{r load_rd_files}
+library(data.table)
+library(ggplot2)
+library(Seurat)
+
+load('filtered_gene_bc_matrices/hg19/02_pbmc3k_cluster.rd') #pbmc
+load('filtered_gene_bc_matrices/hg19/03_pbmc3k_clusterAnalysis.rd') #pbmc.markers,top3,top10
+```
+
+We annotate cell type. The dataset was derived from PBMC sample. There are some marker genes. For cell ID, FACS sorting has been widely used.
+
+### Assigning cell type identity to cluster level
+Fortunately in the case of this dataset, we can use canonical markers to easily match the unbiased clustering to known cell types. The following table shows the marker genes expressed in each cluster and each marker is associated with known cell type.
+
+Cluster ID | Markers | Cell Type
+---------- | -------- | -----
+0 | IL7R, CCR7 | Naive CD4+ T
+1	| CD14, LYZ	| CD14+ Mono
+2 | IL7R, S100A4 | Memory CD4+
+3	| CD8A	| CD8+ T
+4	| MS4A1	| B
+5	| GNLY, NKG7	| NK
+6	| FCGR3A, MS4A7	| FCGR3A+ Mono
+7	| FCER1A, CST3	| DC
+8	| PPBP| Platelet
+
+```{r cluster_level_cellid}
+marker_genes <- sort(c('IL7R','CD4','CCR7','S100A4','CD14','LYZ','MS4A1','CD8A','CD8B', 'FCGR3A','MS4A7','GNLY','NKG7','FCER1A','CST3','PPBP'))
+
+DoHeatmap(pbmc, features = marker_genes) + NoLegend()
+
+# enumerate the cell type ID in the following order
+new.cluster.ids <- c("Naive CD4 T", "CD14+ Mono","Memory CD4 T", "CD8 T","B", "NK", "FCGR3A+ Mono", "DC", "Platelet")
+
+# assign name to each element
+names(new.cluster.ids) <- levels(pbmc)
+
+# add the cell type name and choose it as a cluster identity
+pbmc <- RenameIdents(pbmc, new.cluster.ids)
+
+# plot UMAP
+DimPlot(pbmc,
+				reduction = "umap", 
+				label = TRUE, 
+				pt.size = 0.5) + NoLegend()
+```
+
+### Assigning cell type identity to cell level
+The cluster is computationally assigned using highly variable genes. In practice, the marker genes may have little impact on clustering. Some cells may undergo the transition. Thus, it is more natural to assign the type in a cell level.
+
+Here, we use the same gene markers above and predict the cell type for each cell with mRNA-based gene expression abundance. We will use [`SCINA`](https://www.mdpi.com/2073-4425/10/7/531) to perform this task.
+
+***
+*Task: Go to the developer [website](https://github.com/jcao89757/SCINA) and install the R package `SCINA`.*
+<details>
+  <summary>Answer</summary>
+```{r isntall.scina, eval=FALSE}
+library(BiocManager)
+BiocManager::install('SCINA')
+```
+</details>
+***
+
+Let us perform cell ID using the gene markers.
+```{r scina}
+library(SCINA)
+
+markers <- preprocess.signatures('media/pbmc_simple.csv')
+
+pred_cell_ids <- SCINA(pbmc[["SCT"]]@counts,
+											 markers,
+											 max_iter = 100,
+											 convergence_n = 10,
+											 convergence_rate = 0.999,
+											 sensitivity_cutoff = 0.9,
+											 rm_overlap=FALSE,
+											 allow_unknown=FALSE,
+											 log_file='filtered_gene_bc_matrices/hg19/SCINA.log')
+
+scina_field <- 'cellid_by_scina'
+
+pbmc <- AddMetaData(object=pbmc,metadata=pred_cell_ids$cell_labels,col.name=scina_field)
+Idents(pbmc) <- scina_field
+
+library(randomcoloR)
+
+DimPlot(pbmc, 
+				reduction = "umap", 
+				label = FALSE, 
+				pt.size = 0.5, 
+				cols = distinctColorPalette(9))
+
+# back to seurat_cluster
+Idents(pbmc) <- "seurat_clusters"
+```
+
+Let us save the R variable so that we can contine to work.
+```{r save.cellid.rd}
+save(pbmc, file = "filtered_gene_bc_matrices/hg19/04_pbmc3k_cellid.Rmd",compress = TRUE)
+```
+
+### Assigning cell type identity by feature barcode
+Recently, 10x Genomics provides [Feature Barcoding technology](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/feature-bc-analysis). A user choose multiple antibodies. Both gene expression and suffice proteins shared the same cell barcode. We analyze each cell by profiling both gene expression and proteins at the cell suffice.
+
+### Three things to keep in mind
+- What is cell type identification?
+- When cluster level cell type ID will be useful?
+- When cell level ID will be useful?

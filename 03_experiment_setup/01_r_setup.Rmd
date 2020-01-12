@@ -1,0 +1,43 @@
+---
+title: "Setup R modules"
+author: "hongc2@ccf.org"
+date: "1/16/2020"
+output:
+  html_document:
+    df_print: paged
+objectives: Download 10x PBMC data for input; Install R modules required
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## To install R
+- Install R 3.5.3+ (Note that we have tested R scripts in the session with R3.5.3)
+- Open an internet browser
+- For Windows user: Download [R3.5.3](http://healthstat.snu.ac.kr/CRAN/bin/windows/base/old/3.5.3/R-3.5.3-win.exe) or [R3.6.2](http://healthstat.snu.ac.kr/CRAN/bin/windows/base/old/3.6.2/R-3.6.2-win.exe)
+- Click "Download R for Windows" and save the executable file somewhere on your computer.  Run the .exe file and follow the installation instructions.
+- For MacOSX user: Download [R3.6.2](https://cran.seoul.go.kr/bin/macosx/R-3.6.2.pkg)
+- Now that R is installed, you need to download and install RStudio.
+
+## To install Rstudio
+- Go to [rstudio](www.rstudio.com) and click on the "Download RStudio" button.
+- Click on "Download RStudio Desktop."
+- Click on the version recommended for your system, or the latest Windows version, and save the executable file.  Run the .exe file and follow the installation instructions. 
+
+## To install R modules to accomplish the experiments in the tutorial
+- Launch Rstudio
+- Install the following R library modules,
+```{r r_module_setup, echo=TRUE, eval=TRUE}
+tutorial_pkgs <- c('multtest','R.utils','Seurat','data.table','openxlsx','reshape2','dplyr','reticulate','cowplot','grid','gridExtra','ggplot2','randomcoloR','pheatmap','stringr','tools')
+
+for (pkg in tutorial_pkgs) {
+  if( !is.element(pkg, .packages(all.available = TRUE)) ) {
+    message(sprintf("installing %s ...",pkg))
+    install.packages(pkgs=pkg)
+    message("Done.")
+  }
+  message(sprintf("loading %s ...",pkg))
+  library(pkg,character.only = TRUE)
+}
+```

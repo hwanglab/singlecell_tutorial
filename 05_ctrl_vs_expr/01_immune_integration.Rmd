@@ -1,0 +1,140 @@
+---
+title: Integrating stimulated vs. control PBMC datasets to learn cell-type specific
+  responses
+author: "hongc2@ccf.org"
+date: "1/16/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, include = TRUE)
+```
+Reference: 
+- https://satijalab.org/seurat/v3.1/immune_alignment.html
+- https://satijalab.org/seurat/v3.1/integration.html#sctransform
+
+This tutorial walks through an alignment of two groups of PBMCs from [Kang et al, 2017](https://www.nature.com/articles/nbt.4042). In this experiment, PBMCs were split into a stimulated and control group and the stimulated group was treated with interferon beta. The response to interferon caused cell type specific gene expression changes that makes a joint analysis of all the data difficult, with cells clustering both by stimulation condition and by cell type. Here, we demonstrate our integration strategy, as described in [Stuart and Butler et al, 2018](https://www.biorxiv.org/content/early/2018/11/02/460147), for performing integrated analyses to promote the identification of common cell types and enable comparative analyses. While this example demonstrates the integration of two datasets (conditions), these methods have been extended to multiple datasets. This [workflow](https://satijalab.org/seurat/pancreas_integration_label_transfer.html) provides an example of integrating four pancreatic islet datasets.
+
+### Integration goals
+The following tutorial is designed to give you an overview of the kinds of comparative analyses on complex cell types that are possible using the Seurat integration procedure. Here, we address three main goals:
+
+- Identify cell types that are present in both datasets
+- Obtain cell type markers that are conserved in both control and stimulated cells
+- Compare the datasets to find cell-type specific responses to stimulation
+
+### Workflow in summary
+We will harmonize the Pearson residuals that are output from SCTransform. As demonstrated below, the workflow consists of the following steps:
+
+- Create a list of Seurat objects to integrate
+- Perform SCTransform normalization separately for each dataset
+- Run the PrepSCTIntegration function on the object list
+- Integrate datasets, and proceed with joint analysis
+
+### Download Kang et. al. 2017 Seurat data (Raw read count)
+- [Kang et. al. 2017](https://www.nature.com/articles/nbt.4042)
+- Load necessary R libraries
+
+```{r kang_data, echo=TRUE, eval=TRUE}
+library(data.table)
+library(ggplot2)
+library(Seurat)
+
+options(future.globals.maxSize = 4000 * 1024^2)
+
+pkg <- "ifnb.SeuratData"
+if( !is.element(pkg, .packages(all.available = TRUE)) ) {
+	install.packages("https://seurat.nygenome.org/src/contrib/ifnb.SeuratData_3.0.0.tar.gz", repos = NULL, type = "source")
+}
+library(pkg,character.only = TRUE)
+
+#load Kang data
+data("ifnb")
+```
+
+### Preprocessing and Normalization
+Mitochondrial genes do not exist in the read count matrix and thus QC by mitochondria contamination is skipped. Let us run SCTransform.
+
+```{r ce_sctf, warning=FALSE}
+#split into the original samples
+ifnb.list <- SplitObject(ifnb, split.by = "stim")
+ifnb.list <- lapply(X = ifnb.list, FUN = function(x) {
+	message("This run will take 5+ min ...")
+	seu <- SCTransform(x, verbose = FALSE)
+	return(seu)
+})
+```
+
+### Feature Selection
+Next, select features for downstream integration, and run `PrepSCTIntegration`, which ensures that all necessary Pearson residuals have been calculated.
+
+```{r ce_fsel, warning=FALSE}
+sc.features <- SelectIntegrationFeatures(object.list = ifnb.list,
+                                         nfeatures = 3000)
+
+ifnb.list <- PrepSCTIntegration(object.list = ifnb.list,
+                              anchor.features = sc.features,
+																verbose=FALSE)
+```
+
+### Perform integration (Canonical Correlation Analysis)
+Next, identify anchors and integrate the datasets. Make sure to set `normalization.method = 'SCT'`:
+
+```{r ce_cca, warning=FALSE}
+immune.anchors <- FindIntegrationAnchors(object.list = ifnb.list,
+																				 normalization.method = "SCT",
+																				 anchor.features = sc.features,
+																				 verbose=FALSE)
+
+immune.combined <- IntegrateData(anchorset = immune.anchors,
+																 normalization.method = "SCT",
+																 verbose=FALSE)
+```
+
+### Perform an integrated analysis (Visualization)
+Now proceed with downstream analysis (i.e. visualization, clustering) on the integrated dataset. You can see that after integration, cells group by two conditions (control vs. a stimulated group). Cluster annotations to display are from the data we downloaded.
+
+```{r umap.ctype}
+#Let us delete ifnb.list to free up the memory space
+rm(ifnb)
+rm(ifnb.list)
+rm(immune.anchors)
+
+#Make sure that your default assay is 'integrated'
+DefaultAssay(immune.combined) <- "integrated"
+
+immune.combined <- RunPCA(immune.combined, verbose = FALSE)
+immune.combined <- RunUMAP(immune.combined, dims = 1:20)
+
+# immune.combined <- FindNeighbors(immune.combined, reduction = "pca", dims = 1:20)
+# immune.combined <- FindClusters(immune.combined, resolution = 0.5)
+
+plots <- DimPlot(immune.combined, group.by = c("stim","seurat_annotations"), combine = FALSE)
+
+plots <- lapply(X = plots, FUN = function(x) {
+	p <- x + theme(legend.position = "top") 
+	p <- p + guides(color = guide_legend(nrow = 4, byrow = TRUE, override.aes = list(size = 2.5)))
+	})
+
+CombinePlots(plots)
+```
+
+To visualize the two conditions side-by-side, we can use the split.by argument to show each condition colored by sample.
+
+```{r, r.umap.seurat_clusters, warning=FALSE}
+
+DimPlot(immune.combined, reduction = "umap", split.by = "stim", group.by = "seurat_annotations", label = TRUE) + NoLegend()
+
+```
+
+Let us save the R variable so that we can continue to work.
+```{r save.ce_integ.rd}
+wkd <- "out"
+if (!file.exists(wkd)){dir.create(wkd)}
+save(immune.combined, file = file.path(wkd,'01_immune_combined.rd'),compress = TRUE)
+```
+
+### Three things to know
+- Important R function and packages: `lapply` and `ggplot2`
+- CCA
+

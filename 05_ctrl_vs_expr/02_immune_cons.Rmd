@@ -1,0 +1,67 @@
+---
+title: "Cluster Analysis in Integrated Data"
+author: "hongc2@ccf.org"
+date: "1/16/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, include = TRUE)
+```
+
+### Setup
+Let us setup the experiment by loading the previous R environment files and R libraries if not exist.
+```{r load.rlib}
+library(data.table)
+library(ggplot2)
+library(Seurat)
+
+load('out/01_immune_combined.rd') #immune.combined
+```
+
+### Identify conserved cell type markers
+To identify canonical cell type marker genes that are conserved across conditions, we provide the `FindConservedMarkers` function. This function performs differential gene expression testing for each dataset/group and combines the p-values using meta-analysis methods from the `MetaDE` R package. For example, we can calculated the genes that are conserved markers irrespective of stimulation condition in a cluster labeld by 'NK' cells.
+
+```{r findConserved}
+DefaultAssay(immune.combined) <- "SCT"
+Idents(immune.combined) <- "seurat_annotations"
+
+message("This run will take 5+ min ...")
+nk.markers <- FindConservedMarkers(immune.combined, assay = "SCT", ident.1 = "NK", grouping.var = "stim", verbose = FALSE) #default slot: 'data'
+head(nk.markers)
+```
+
+Furthermore, we can explore the following marker genes for each cell type to verify if the clusters have specific cell types.
+
+```{r 2.featuremap}
+marker_genes <- c("CD3D", "SELL", "CREM", "CD8A", "GNLY", "CD79A", "FCGR3A", 
+    "CCL2", "PPBP")
+
+FeaturePlot(immune.combined, features = marker_genes, min.cutoff = "q9")
+```
+
+The `DotPlot` function with the `split.by` parameter can be useful for viewing conserved cell type markers across conditions, showing both the expression level and the percentage of cells in a cluster expressing any given gene. Here we plot 2-3 strong marker genes for each of our 13 clusters.
+
+```{r 2.dotplot}
+
+markers.to.plot <- c("CD3D", "CREM", "HSPH1", "SELL", "GIMAP5", "CACYBP", "GNLY", "NKG7", "CCL5", "CD8A", "MS4A1", "CD79A", "MIR155HG", "NME1", "FCGR3A", "VMO1", "CCL2", "S100A9", "HLA-DQA1", "GPR183", "PPBP", "GNG11", "HBA2", "HBB", "TSPAN13", "IL3RA", "IGJ")
+
+DotPlot(immune.combined, 
+				features = rev(markers.to.plot), 
+				cols = c("blue", "red"), 
+				dot.scale = 8, 
+				split.by = "stim") + RotatedAxis()
+```
+
+Let us save the R variable so that we can continue to work.
+```{r save.ce_integ.rd}
+save(immune.combined, file = 'out/02_immune_cons.rd',compress = TRUE)
+```
+
+### At this point, you should know
+- When conserved gene are useful?
+- In Seurat object,
+    - What is assay?
+    - What is slot?
+    - Why there are multiple slots?

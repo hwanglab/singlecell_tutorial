@@ -1,0 +1,76 @@
+---
+title: "Differentially-Expressed Gene Analysis"
+author: "hongc2@ccf.org"
+date: "1/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, include = TRUE)
+```
+
+### Setup
+Let us setup the experiment by loading the previous R environment files and R libraries if not exist.
+```{r 3.load.rlib, warning=FALSE}
+library(data.table)
+library(ggplot2)
+library(cowplot)
+library(Seurat)
+
+load('out/02_immune_cons.rd') #immune.combined
+DefaultAssay(immune.combined) <- "SCT"
+```
+
+### Identify differential expressed genes across conditions
+Now that we’ve aligned the stimulated and control cells, we can start to do comparative analyses and look at the differences induced by stimulation. <u>One way to look broadly at these changes is to plot the average expression of both the stimulated and control cells and look for genes that are visual outliers on a scatter plot</u>. Here, we take the average expression of both the stimulated and control naive T cells and CD14 monocyte populations and generate the scatter plots, highlighting genes that exhibit dramatic responses to interferon stimulation.
+
+```{r 3.dge.scatter}
+theme_set(theme_cowplot())
+t.cells <- subset(immune.combined, idents = "CD4 Naive T")
+Idents(t.cells) <- "stim"
+avg.t.cells <- log1p(AverageExpression(t.cells, verbose = FALSE)$RNA)
+avg.t.cells$gene <- rownames(avg.t.cells)
+
+cd14.mono <- subset(immune.combined, idents = "CD14 Mono")
+Idents(cd14.mono) <- "stim"
+avg.cd14.mono <- log1p(AverageExpression(cd14.mono, verbose = FALSE)$RNA)
+avg.cd14.mono$gene <- rownames(avg.cd14.mono)
+
+genes.to.label = c("ISG15", "LY6E", "IFI6", "ISG20", "MX1", "IFIT2", "IFIT1", "CXCL10", "CCL8")
+p1 <- ggplot(avg.t.cells, aes(CTRL, STIM)) + geom_point() + ggtitle("CD4 Naive T Cells")
+p1 <- LabelPoints(plot = p1, points = genes.to.label, repel = FALSE, colour="red")
+p2 <- ggplot(avg.cd14.mono, aes(CTRL, STIM)) + geom_point() + ggtitle("CD14 Monocytes")
+p2 <- LabelPoints(plot = p2, points = genes.to.label, repel = FALSE, colour="red")
+plot_grid(p1, p2)
+```
+### Differential expression gene analysis between two samples
+As you can see, many of the same genes are upregulated in both of these cell types and likely represent a conserved interferon response pathway.
+
+Because we are confident in having identified common cell types across condition, we can ask what genes change in different conditions for cells of the same type. First, we create a column in the meta.data slot to hold both the cell type and stimulation information and switch the current ident to that column. Then we use `FindMarkers` to find the genes that are different between stimulated and control B cells. Notice that many of the top genes that show up here are the same as the ones we plotted earlier as core interferon response genes. Additionally, genes like *CXCL10* which we saw were specific to monocyte and B cell interferon response show up as highly significant in this list as well.
+
+```{r 3.dge.findmarkers}
+immune.combined$celltype.stim <- paste(Idents(immune.combined), immune.combined$stim, sep = "_")
+Idents(immune.combined) <- "celltype.stim"
+
+# Here, we use SCT.data that is a lognorm of corrected RNA read count. Each is normalized separately during the SCTransform. If you want more rigorous DGE analysis, you can use RNA.count and ZINB (zero-inflation negative binomial) as a test model.
+b.interferon.response <- FindMarkers(immune.combined, assay="SCT", ident.1 = "B_STIM", ident.2 = "B_CTRL", verbose = FALSE)
+head(b.interferon.response, n = 15)
+```
+
+### Gene expression level in UMAP or Violin Plot
+Another useful way to visualize these changes in gene expression is with the split.by option to the FeaturePlot or `VlnPlot` function. This will display `FeaturePlots` of the list of given genes, split by a grouping variable (stimulation condition here). Genes such as *CD3D* and *GNLY* are canonical cell type markers (for T cells and NK/CD8 T cells) that are virtually unaffected by interferon stimulation and display similar gene expression patterns in the control and stimulated group. *IFI6* and *ISG15*, on the other hand, are core interferon response genes and are upregulated accordingly in all cell types. Finally, *CD14* and *CXCL10* are genes that show a cell type specific interferon response. *CD14* expression decreases after stimulation in *CD14* monocytes, which could lead to misclassification in a supervised analysis framework, underscoring the value of integrated analysis. *CXCL10* shows a distinct upregulation in monocytes and B cells after interferon stimulation but not in other cell types.
+
+```{r 3.dge.featureplot, fig.width=10, fig.height = 12}
+FeaturePlot(immune.combined, 
+						features = c("CD3D", "GNLY", "IFI6"), 
+						split.by = "stim", 
+						max.cutoff = 3, 
+						cols = c("grey", "red"))
+```
+
+```{r 3.dge.violin, fig.width=10, fig.height = 12}
+plots <- VlnPlot(immune.combined, features = c("LYZ", "ISG15", "CXCL10"), split.by = "stim", group.by = "seurat_annotations", pt.size = 0, combine = FALSE)
+
+CombinePlots(plots = plots, ncol = 1)
+```

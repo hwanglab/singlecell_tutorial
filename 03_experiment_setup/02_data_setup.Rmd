@@ -1,0 +1,27 @@
+---
+title: "Download experiment dataset"
+author: "hongc2@ccf.org"
+date: "1/16/2020"
+objectives: Download 10x PBMC data in Seurat object format
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Tasks
+- Follow the instruction at [https://github.com/satijalab/seurat-data](https://github.com/satijalab/seurat-data) and download `pbmc3k`, PBMC dataset transformed into Seurat object.
+- In summary, install `devtools`,
+- load `devtools`, and
+- Download "seurat-data"
+
+## Download one more dataset and follow this instruction
+- [Kang et. al. 2017](https://www.nature.com/articles/nbt.4042)
+
+```{r data_setup, echo=TRUE, eval=TRUE}
+pkg <- "ifnb.SeuratData"
+if( !is.element(pkg, .packages(all.available = TRUE)) ) {
+	install.packages("https://seurat.nygenome.org/src/contrib/ifnb.SeuratData_3.0.0.tar.gz", repos = NULL, type = "source")
+}
+library(pkg,character.only = TRUE)
+data("ifnb")
+```

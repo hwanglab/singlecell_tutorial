@@ -1,0 +1,93 @@
+---
+title: "Cell Identification"
+author: "hongc2@ccf.org"
+date: "1/16/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_chunk$set(echo = TRUE, eval = TRUE, include = TRUE)
+```
+
+### Finding differentially expressed features (cluster biomarkers)
+Seurat can help you find markers that define clusters via differential expression. By default, it identifes positive and negative markers of a single cluster (specified in `ident.1`), compared to all other cells. `FindAllMarkers` automates this process for all clusters, but you can also test groups of clusters vs. each other, or against all cells.
+
+The `min.pct` argument requires a feature to be detected at a minimum percentage in either of the two groups of cells, and the thresh.test argument requires a feature to be differentially expressed (on average) by some amount between the two groups. You can set both of these to 0, but with a dramatic increase in time - since this will test a large number of features that are unlikely to be highly discriminatory. As another option to speed up these computations, `max.cells.per.ident` can be set. This will downsample each identity class to have no more cells than whatever this is set to. While there is generally going to be a loss in power, the speed increases can be significiant and the most highly differentially expressed features will likely still rise to the top.
+
+```{r load.rd}
+library(Seurat)
+library(ggplot2)
+library(data.table)
+
+if (!('pbmc' %in% ls())) {
+	load("filtered_gene_bc_matrices/hg19/02_pbmc3k_cluster.rd")
+}
+#check which assay set to default!
+DefaultAssay(pbmc)
+```
+
+Let us compare one cluaster vs. the rest of clusters so that which genes are either highly expressed or low expressed comparing to the other clusters.
+```{r dge_dge_cluster}
+# find markers for every cluster compared to all remaining cells, report both positives and negatives. The output DGE table is converted to data.table for better handling,
+pbmc.markers <- as.data.table(FindAllMarkers(pbmc, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25))
+pbmc.markers <- pbmc.markers[!is.na(gene),]
+
+# We collect top 10 distinct genes for each cluster
+top10 <- pbmc.markers[,.SD[order(-avg_logFC)][1:10],by='cluster']
+top10 <- top10[!is.na(gene),]
+```
+Can we browse the table?
+<details>
+<summary>Answer</summary>
+`View(top10)`
+</details>
+
+#### Slots vs. DGE method
+In the normalization step, SCTransform creates SCT assay where there 3 slots available. `FindAllMarkers` has several DGE methods in the option. Depending on which DGE method, we have to provide an appropriate slot.
+***
+*Task: Explore the function, `FindAllMarkers` to see what the function is and which options are available!*
+
+<details>
+  <summary>Answer</summary>
+```{r help.findallmarkers}
+?FindAllMarkers()
+```
+</details>
+***
+
+#### Visualization of gene expression level
+We include several tools for visualizing marker expression. `VlnPlot` (shows expression probability distributions across clusters), and `FeaturePlot` (visualizes feature expression on a tSNE or PCA plot) are our most commonly used visualizations. We also suggest exploring `RidgePlot`, `CellScatter`, and `DotPlot` as additional methods to view your dataset.
+
+```{r vis_ge}
+# Note that the default slot is 'data' (log normalized)
+Idents(pbmc) <- "seurat_clusters"
+goi1 <- c("CD8A", "GZMK", "CCL5", "S100A4", "ANXA1", "CCR7", "ISG15", "CD3D")
+VlnPlot(pbmc, features = goi1, ncol=4)
+
+# Gene expression on UMAP
+goi2 <- sort(c("MS4A1", "GNLY", "CD3E", "CD14", "FCER1A", "FCGR3A", "LYZ", "PPBP", "CD8A"))
+FeaturePlot(pbmc, features = goi2)
+
+# Use ROC model for DGE testing,
+pbmc.markers.roc <- as.data.table(FindAllMarkers(pbmc, only.pos = TRUE, test.use='roc', min.pct = 0.25, logfc.threshold = 0.25))
+pbmc.markers.roc <- pbmc.markers.roc[!is.na(gene),]
+
+top3 <- pbmc.markers.roc[,.SD[order(-myAUC)][1],by='cluster']
+FeaturePlot(pbmc, features = sort(top3$gene))
+```
+
+`DoHeatmap` generates an expression heatmap for given cells and features. In this case, we are plotting the top 10 markers (or all markers if less than 20) for each cluster.
+
+```{r dge_heatmap, warning=FALSE}
+DoHeatmap(pbmc, features = top10$gene) + NoLegend()
+```
+
+Save DGE table.
+```{r r.save}
+save(pbmc.markers,top10,file='filtered_gene_bc_matrices/hg19/03_pbmc3k_clusterAnalysis.rd',compress=TRUE)
+```
+
+#### Two things to note
+- Differential gene expression analysis to describe clusters
+- Choose an appropriate matrix upon DGE method
