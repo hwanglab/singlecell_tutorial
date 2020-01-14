@@ -1,5 +1,5 @@
 ---
-title: "cellranger.count"
+title: "Cellranger Count (FASTQ to BAM and some basic single-cell data analysis)"
 author: "hongc2@ccf.org"
 date: "1/16/2020"
 output: html_document
@@ -10,17 +10,17 @@ library(knitr)
 opts_chunk$set(echo = TRUE)
 ```
 
-## Preparing inputs
-- FASTQ file path: refer to `01_bcl_to_fatq.Rmd`
+### Preparing inputs
+- FASTQ file path: refer to `01_bcl_to_fastq.Rmd`
 - reference/transcriptome filepath: Given a reference genome sequence in FASTA file and gene model annotation file, we build index files to speed up an alignment procedure. The cellranger count utilizes `STAR` RNA-Seq alignment method. Use `cellranger mkgtf`
-- [ref:cellranger.mkgtf](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/advanced/references)
+- Refer to the program manual at [cellranger.mkgtf](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/advanced/references).
 
 ```{r sample_sheet, fig.align="center", echo=FALSE, out.width = "50%", fig.cap = 'Fig1. Many pre-built transcriptome index files are available from online for the ones often used. We can build our own index files for the species of interest using `cellranger mkgtf`'}
 include_graphics("media/transcriptome_refpath.png")
 ```
 - `genes.gtf`: GTF file format gene model file
 
-## FASTQ to BAM
+### FASTQ to BAM
 - For example,
 ````markdown
 cellranger count --id P4_day30_CART
@@ -34,18 +34,24 @@ cellranger count --id P4_day30_CART
 - `~/ref/10x_genomics/GRCh38`: transcriptome index directory path
 - `libraries`: For multiple FASTQ file paths belonging to the sample ID, create a CSV file that has three fields: `fastqs` (fastq file directory), `sample` (filename to search for in the fastq directory), and `library_type`.
 
-```{r count_library_csv, fig.align="center", echo=FALSE, out.width = "100%", fig.cap = 'Fig2. A library sample sheet to run cellranger count. In this example, one GEM was sequenced in two times. Both `Gene expression` and `Antibody Capture` are used in the library_type.'}
+```{r count_library_csv, fig.align="center", echo=FALSE, out.width = "100%", fig.cap = 'Fig2. A library sample sheet to run `cellranger count`. In this example, one GEM was sequenced in two times. Both `Gene expression` and `Antibody Capture` are used in the library_type.'}
 include_graphics("media/cr_count_library_csv.png")
 ```
 
-## Cellranger count workflow overview
+### Cellranger count workflow overview
 ```{r count_workflow_overview, fig.align="center", echo=FALSE, out.width = "80%", fig.cap = 'Fig4. Excerpted from Zheng et. al. "https://www.nature.com/articles/ncomms14049.pdf"'}
 include_graphics("media/gemCode_crCount_overview.png")
 ```
-## Output files
-```{r count_output_files, fig.align="center", echo=FALSE, out.width = "50%", fig.cap = 'Fig5. The cellranger count generates QC summary statistics, STAR BAM file, feature by cell matrix, and low dimension clustering analysis.'}
+
+### Output files
+```{r count_output_files, fig.align="center", echo=FALSE, out.width = "50%", fig.cap = 'Fig5. The `cellranger count` generates QC summary statistics, STAR BAM file, feature by cell matrix, and low dimension clustering analysis.'}
 include_graphics("media/cr_count_output_files.png")
 ```
-## Interpreting the results
+
+### Interpreting the results
 Here, we only examine the feature count/mapping quality.
 - [web_summary.html](media/web_summary.html)
+
+### Things to know
+- The workflow steps in `cellranger count`
+- Undertanding `cellranger count` output

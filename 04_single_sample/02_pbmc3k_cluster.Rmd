@@ -21,7 +21,7 @@ load('filtered_gene_bc_matrices/hg19/01_pbmc3k_sctf.rd') #pbmc
 ```
 
 ### Perform linear dimensional reduction
-We perform PCA on the scaled data. By default, only the previously determined variable features are used as input, but can be defined using `features` argument if you wish to choose a different subset.
+We perform PCA on the scaled data. By default, only the previously determined variable features are used as input but can be defined using the `features` argument if you wish to choose a different subset.
 
 ```{r run_pca}
 pbmc <- RunPCA(pbmc, verbose = FALSE)
@@ -43,29 +43,29 @@ Plot 2D PCA. Note that the PCA is computed from `SCT` assay.
 DimPlot(pbmc, reduction = "pca")
 ```
 
-In particular `DimHeatmap` allows for easy exploration of the primary sources of heterogeneity in a dataset, and can be useful when trying to decide which PCs to include for further downstream analyses. Both cells and features are ordered according to their PCA scores. Setting `cells` to a number plots the ‘extreme’ cells on both ends of the spectrum, which dramatically speeds plotting for large datasets. Though clearly a supervised analysis, we find this to be a valuable tool for exploring correlated feature sets.
+In particular `DimHeatmap` allows for easy exploration of the primary sources of heterogeneity in a dataset and can be useful when trying to decide which PCs to include for further downstream analyses. Both cells and features are ordered according to their PCA scores. Setting `cells` to a number plots the "extreme" cells on both ends of the spectrum, which dramatically speeds plotting for large datasets. Though a supervised analysis, we find this to be a valuable tool for exploring correlated feature sets.
 
 ```{r pc9_heatmap}
 DimHeatmap(pbmc, dims = 1:9, cells = 500, balanced = TRUE)
 ```
 
-### Determine the ‘dimensionality’ of the dataset
-To overcome the extensive technical noise in any single feature for scRNA-seq data, Seurat clusters cells based on their PCA scores, with each PC essentially representing a ‘metafeature’ that combines information across a correlated feature set. The top principal components therefore represent a robust compression of the dataset. However, how many componenets should we choose to include? 10? 20? 100?
+### Determine the "dimensionality" of the dataset
+To overcome the extensive technical noise in any single feature for scRNA-seq data, Seurat clusters cells based on their PCA scores, with each PC essentially representing a "meta feature" that combines information across a correlated feature set. The top principal components, therefore, represent a robust compression of the dataset. However, how many components should we choose to include? 10? 20? 100?
 
-We use ‘Elbow plot’ to determine an appropriate number of dimension. It plots a ranking of principle components based on the percentage of variance explained by each one (ElbowPlot function). In this example, we can observe an ‘elbow’ around PC9-14, suggesting that the majority of true signal is captured in the first 13 PCs.
+We use the "Elbow plot" to determine an appropriate number of dimensions. It plots a ranking of principal components based on the percentage of variance explained by each one (ElbowPlot function). In this example, we can observe an "elbow" around PC9-14, suggesting that the majority of true signal is captured in the first 13 PCs.
 
 ```{r pca_sd}
 ElbowPlot(pbmc)
 ```
 
-Identifying the true dimensionality of a dataset – can be challenging/uncertain for the user. The examining standard deviation is a heuristic but it is commonly used, and can be calculated instantly. We might have been justified in choosing anything between PC 9-14 as a cutoff.
+Identifying the true dimensionality of a dataset can be challenging/uncertain for the user. The examining standard deviation is a heuristic but it is commonly used, and can be calculated instantly. We might have been justified in choosing anything between PC 9-14 as a cutoff.
 
 ### Cluster the cells
-Seurat v3 applies a graph-based clustering approach, building upon initial strategies in ((Macosko et al)[http://www.cell.com/abstract/S0092-8674(15)00549-8]). Importantly, the distance metric which drives the clustering analysis (based on previously identified PCs) remains the same. However, our approach to partioning the cellular distance matrix into clusters has dramatically improved. Our approach was heavily inspired by recent manuscripts which applied graph-based clustering approaches to scRNA-seq data [(SNN-Cliq, Xu and Su, Bioinformatics, 2015)[http://bioinformatics.oxfordjournals.org/content/early/2015/02/10/bioinformatics.btv088.abstract]] and CyTOF data [(PhenoGraph, Levine et al., Cell, 2015)[http://www.ncbi.nlm.nih.gov/pubmed/26095251]]. Briefly, these methods embed cells in a graph structure - for example a K-nearest neighbor (KNN) graph, with edges drawn between cells with similar feature expression patterns, and then attempt to partition this graph into highly interconnected ‘quasi-cliques’ or ‘communities’.
+Seurat v3 applies a graph-based clustering approach, building upon initial strategies in [Macosko et. al.](http://www.cell.com/abstract/S0092-8674(15)00549-8). Importantly, the distance metric which drives the clustering analysis (based on previously identified PCs) remains the same. However, our approach to partitioning the cellular distance matrix into clusters has dramatically improved. Our approach was heavily inspired by recent manuscripts which applied graph-based clustering approaches to scRNA-seq data [SNN-Cliq, Xu and Su, Bioinformatics, 2015](http://bioinformatics.oxfordjournals.org/content/early/2015/02/10/bioinformatics.btv088.abstract) and CyTOF data [PhenoGraph, Levine et. al., Cell, 2015](http://www.ncbi.nlm.nih.gov/pubmed/26095251). Briefly, these methods embed cells in a graph structure - for example a K-nearest neighbor (KNN) graph, with edges drawn between cells with similar feature expression patterns, and then attempt to partition this graph into highly interconnected "quasi-cliques" or "communities".
 
-As in PhenoGraph, we first construct a KNN graph based on the euclidean distance in PCA space, and refine the edge weights between any two cells based on the shared overlap in their local neighborhoods (Jaccard similarity). This step is performed using the `FindNeighbors` function, and takes as input the previously defined dimensionality of the dataset (first 13 PCs).
+As in PhenoGraph, we first construct a KNN graph based on the euclidean distance in PCA space and refine the edge weights between any two cells based on the shared overlap in their local neighborhoods (Jaccard similarity). This step is performed using the `FindNeighbors` function and takes as input the previously defined dimensionality of the dataset (first 13 PCs).
 
-To cluster the cells, we next apply modularity optimization techniques such as the Louvain algorithm (default) or SLM [(SLM, Blondel et al., Journal of Statistical Mechanics)[http://dx.doi.org/10.1088/1742-5468/2008/10/P10008]], to iteratively group cells together, with the goal of optimizing the standard modularity function. The `FindClusters` function implements this procedure, and contains a resolution parameter that sets the ‘granularity’ of the downstream clustering, with increased values leading to a greater number of clusters. We find that setting this parameter between 0.4-1.2 typically returns good results for single-cell datasets of around 3K cells. Optimal resolution often increases for larger datasets. The clusters can be found using the `Idents` function.
+To cluster the cells, we next apply modularity optimization techniques such as the Louvain algorithm (default) or SLM [SLM, Blondel et. al., Journal of Statistical Mechanics](http://dx.doi.org/10.1088/1742-5468/2008/10/P10008), to iteratively group cells together, with the goal of optimizing the standard modularity function. The `FindClusters` function implements this procedure and contains a resolution parameter that sets the "granularity" of the downstream clustering, with increased values leading to a greater number of clusters. We find that setting this parameter between 0.4-1.2 typically returns good results for single-cell datasets of around 3K cells. Optimal resolution often increases for larger datasets. The clusters can be found using the `Idents` function.
 
 ```{r nn_cluster}
 pbmc <- FindNeighbors(pbmc, dims = 1:13)
@@ -80,7 +80,7 @@ DimPlot(pbmc, reduction = "pca", label = TRUE) + NoLegend()
 ```
 
 ### Run non-linear dimensional reduction (UMAP/tSNE)
-Seurat offers several non-linear dimensional reduction techniques, such as tSNE and UMAP, to visualize and explore these datasets. The goal of these algorithms is to learn the underlying manifold of the data in order to place similar cells together in low-dimensional space. Cells within the graph-based clusters determined above should co-localize on these dimension reduction plots. As input to the UMAP and tSNE, we suggest using the same PCs as input to the clustering analysis.
+Seurat offers several non-linear dimensionality reduction techniques, such as tSNE and UMAP, to visualize and explore these datasets. The goal of these algorithms is to learn the underlying manifold of the data in order to place similar cells together in low-dimensional space. Cells within the graph-based clusters determined above should co-localize on these dimension reduction plots. As input to the UMAP and tSNE, we suggest using the same PCs as input to the clustering analysis.
 
 ```{r run_umap}
 # In Seurat v3.1.2, RunUMAP calls `uwot` (umap implementation in R and it should be already installed) as default. If RunUMAP does not find R umap, then you can try Python umap via reticulate::py_install(packages = 'umap-learn')
@@ -95,7 +95,7 @@ Let us save the R variable so that we can contine to work.
 save(pbmc, file = "filtered_gene_bc_matrices/hg19/02_pbmc3k_cluster.rd",compress = TRUE)
 ```
 
-#### Three things you need to understand
+### Three things you need to understand
 - PCA
 - Clustering
 - UMAP
