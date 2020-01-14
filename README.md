@@ -9,7 +9,7 @@ This tutorial is an introductory single cell sequencing data analysis. We will c
 
 ## Index
 1. Machine learning ideas in Suerat Package
-    1. [Machine learning theory under scRNA data](00_reference/SCdata_ML_slides.pdf)
+    1. [Machine learning theory under scRNA data](00_references/SCdata_ML_slides.pdf)
 1. Introduction of single cell sequencing
     1. [10x_chromium](01_singlecell_intro/01_intro.Rmd)
 1. Cellranger
