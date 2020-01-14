@@ -24,11 +24,11 @@ load('out/01_immune_combined.rd') #immune.combined
 To identify canonical cell type marker genes that are conserved across conditions, we provide the `FindConservedMarkers` function. This function performs differential gene expression testing for each dataset/group and combines the p-values using meta-analysis methods from the `MetaDE` R package. For example, we can calculate the genes that are conserved markers irrespective of stimulation condition in a cluster labeled by 'NK' cells.
 
 ```{r findConserved}
-DefaultAssay(immune.combined) <- "SCT"
+DefaultAssay(immune.combined) <- "RNA"
 Idents(immune.combined) <- "seurat_annotations"
 
 message("This run will take 5+ min ...")
-nk.markers <- FindConservedMarkers(immune.combined, assay = "SCT", ident.1 = "NK", grouping.var = "stim", verbose = FALSE) #default slot: 'data'
+nk.markers <- FindConservedMarkers(immune.combined, ident.1 = "NK", grouping.var = "stim", verbose = FALSE) #default slot: 'data'
 head(nk.markers)
 ```
 

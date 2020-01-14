@@ -19,7 +19,6 @@ library(cowplot)
 library(Seurat)
 
 load('out/02_immune_cons.rd') #immune.combined
-DefaultAssay(immune.combined) <- "SCT"
 ```
 
 ### Identify differential expressed genes across conditions
@@ -27,21 +26,17 @@ Now that we've aligned the stimulated and control cells, we can start to do comp
 
 ```{r 3.dge.scatter}
 
-# DefaultAssay(immune.combined) <- "RNA"
-# Normalize RNA data for visualization purposes
-# immune.combined <- NormalizeData(immune.combined, verbose = FALSE)
+DefaultAssay(immune.combined) <- "RNA"
 
 theme_set(theme_cowplot())
 t.cells <- subset(immune.combined, idents = "CD4 Naive T")
 Idents(t.cells) <- "stim"
-# avg.t.cells <- log1p(AverageExpression(t.cells, verbose = FALSE)$RNA)
-avg.t.cells <- log1p(AverageExpression(t.cells,assays="SCT", slot="data", verbose = FALSE)$SCT)
+avg.t.cells <- log1p(AverageExpression(t.cells, verbose = FALSE)$RNA)
 avg.t.cells$gene <- rownames(avg.t.cells)
 
 cd14.mono <- subset(immune.combined, idents = "CD14 Mono")
 Idents(cd14.mono) <- "stim"
-# avg.cd14.mono <- log1p(AverageExpression(cd14.mono, verbose = FALSE)$RNA)
-avg.cd14.mono <- log1p(AverageExpression(cd14.mono,assays="SCT",slot="data", verbose = FALSE)$SCT)
+avg.cd14.mono <- log1p(AverageExpression(cd14.mono, verbose = FALSE)$RNA)
 avg.cd14.mono$gene <- rownames(avg.cd14.mono)
 
 genes.to.label = c("ISG15", "LY6E", "IFI6", "ISG20", "MX1", "IFIT2", "IFIT1", "CXCL10", "CCL8")
@@ -61,8 +56,8 @@ Because we are confident in having identified common cell types across the condi
 immune.combined$celltype.stim <- paste(Idents(immune.combined), immune.combined$stim, sep = "_")
 Idents(immune.combined) <- "celltype.stim"
 
-# Here, we use SCT.data that is a log-norm of corrected RNA read count. Each of sample is normalized separately in the SCTransform. If you want more rigorous DGE analysis, you can use RNA.count and ZINB (zero-inflation negative binomial) as a test model.
-b.interferon.response <- FindMarkers(immune.combined, assay="SCT", ident.1 = "B_STIM", ident.2 = "B_CTRL", verbose = FALSE)
+# If you want more rigorous DGE analysis, you can use RNA.count and ZINB (zero-inflation negative binomial) as a test model.
+b.interferon.response <- FindMarkers(immune.combined, ident.1 = "B_STIM", ident.2 = "B_CTRL", verbose = FALSE)
 head(b.interferon.response, n = 15)
 ```
 
