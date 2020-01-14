@@ -9,7 +9,7 @@ This tutorial is an introductory single cell sequencing data analysis. We will c
 
 ## Index
 1. Machine learning ideas in Suerat Package
-    1. [Machine learning theory under scRNA data](00_references/SCdata_ML_slides.pdf)
+    1. [Machine learning theory under scRNA analysis](00_references/SCdata_ML_slides.pdf)
 1. Introduction of single cell sequencing
     1. [10x_chromium](01_singlecell_intro/01_intro.Rmd)
 1. Cellranger
@@ -24,7 +24,7 @@ This tutorial is an introductory single cell sequencing data analysis. We will c
     1. [Cluster Analysis](04_single_sample/03_pbmc3k_clusterAnalysis.Rmd)
     1. [Cell Identification](04_single_sample/04_pbmc3k_cellid.Rmd)
 1. Break (15 min)
-1. Comparing two samples
+1. Comparative analysis
     1. [integration](05_ctrl_vs_expr/01_immune_integration.Rmd)
     1. [conserved markers](05_ctrl_vs_expr/02_immune_cons.Rmd)
     1. [differential gene-expression analysis](05_ctrl_vs_expr/03_immune_dge.Rmd)
@@ -47,5 +47,3 @@ Brought to you by the Dr. Hwang lab in Department of Quantitative Health Science
 #### Clone github codes:
 1. Click "Clone or download" and click "Download Zip".
 1. Save the zip file into your home directory and unzip.
-
-

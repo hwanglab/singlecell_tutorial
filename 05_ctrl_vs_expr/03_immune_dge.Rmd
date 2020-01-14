@@ -31,7 +31,7 @@ DefaultAssay(immune.combined) <- "RNA"
 theme_set(theme_cowplot())
 t.cells <- subset(immune.combined, idents = "CD4 Naive T")
 Idents(t.cells) <- "stim"
-avg.t.cells <- log1p(AverageExpression(t.cells, verbose = FALSE)$RNA)
+avg.t.cells <- log1p(AverageExpression(t.cells, verbose = FALSE)$RNA) #the default slot is .data which was normalized in the prev step!
 avg.t.cells$gene <- rownames(avg.t.cells)
 
 cd14.mono <- subset(immune.combined, idents = "CD14 Mono")

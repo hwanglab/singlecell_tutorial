@@ -28,7 +28,7 @@ The following tutorial is designed to give you an overview of the kinds of compa
 We will harmonize the Pearson residuals that are output from `SCTransform`. As demonstrated below, the workflow consists of the following steps:
 
 - Create a list of Seurat objects to integrate
-- More than one sample is compared. Thus considering library size factor, an explcit normalization is required
+- More than one sample is compared. Thus considering library size factor, an explicit normalization is required
 - Cell cycle evaluation is also considered for better comparison
 - Perform `SCTransform` separately for each dataset
 - Run the `PrepSCTIntegration` function on the object list
@@ -66,9 +66,7 @@ load('data/cycle.rda')
 ifnb.list <- SplitObject(ifnb, split.by = "stim")
 ifnb.list <- lapply(X = ifnb.list, function(seu) {
     message("This run will take 5+ min ...")
-
-    # VlnPlot(seu, features = c("nFeature_RNA", "nCount_RNA"), ncol = 2, pt.size=0)
-    seu <- NormalizeData(seu, verbose = TRUE)
+    seu <- NormalizeData(seu, verbose = TRUE) #the normalization result will be stored into .data slot.
     seu <- CellCycleScoring(seu, g2m.features=g2m_genes, s.features=s_genes)
     seu <- SCTransform(seu,verbose = FALSE)
     return(seu)
@@ -87,7 +85,7 @@ ifnb.list <- PrepSCTIntegration(object.list = ifnb.list,
 ```
 
 ### Perform integration (Canonical Correlation Analysis)
-Integration is a powerful method that uses these shared sources of greatest variation to identify shared subpopulations across conditions or datasets [Stuart and Bulter et al. (2018)]. The goal of integration is to ensure that the celltypes of one condition/dataset align with the same celltypes of the other conditions/datasets (e.g. control macrophages align with stimulated macrophages).
+Integration is a powerful method that uses these shared sources of greatest variation to identify shared subpopulations across conditions or datasets [Stuart and Bulter et al. (2018)]. The goal of integration is to ensure that the cell types of one condition/dataset align with the same cell types of the other conditions/datasets (e.g. control macrophages align with stimulated macrophages).
 
 ```{r cca, fig.align="center", out.width = "60%", eval=TRUE, fig.cap = 'Fig1. Stuart T and Butler A, et. al. Comprehensive integration of single cell data, bioRxiv 2018'}
 include_graphics("data/integration.png")
@@ -106,13 +104,13 @@ Perform canonical correlation analysis (CCA):
 > NOTE: The shared highly variable genes are used because they are the most likely to represent those genes distinguishing the different cell types present.
 
 * Identify anchors or mutual nearest neighbors (MNNs) across datasets (sometimes incorrect anchors are identified): MNNs can be thought of as 'best buddies'. For each cell in one condition:
-    + The cell's closest neighbor in the other condition is identified based on gene expression values - it's best buddy.
-    + The reciprical analysis is performed, and if the two cells are buddies in both directions, then those cells will be marked as anchors to 'anchor' the two datasets together.
+    + The cell's closest neighbor in the other condition is identified based on gene expression values - it's the best buddy.
+    + The reciprocal analysis is performed, and if the two cells are buddies in both directions, then those cells will be marked as anchors to 'anchor' the two datasets together.
     + "The difference in expression values between cells in an MNN pair provides an estimate of the batch effect, which is made more precise by averaging across many such pairs. A correction vector is obtained and applied to the expression values to perform batch correction." [Stuart and Bulter et al. (2018)].
 
 * Filter anchors to remove incorrect anchors: Assess the similarity between anchor pairs by the overlap in their local neighborhoods (incorrect anchors will have low scores) - do the adjacent cells have best buddies that are adjacent to each other?
 
-* Integrate the condtions/datasets:
+* Integrate the conditions/datasets:
     + Use anchors and corresponding scores to transform the cell expression values, allowing for the integration of the datasets (different samples, datasets, modalities)
     + NOTE: Transformation of each cell uses a weighted average of the two cells of each anchor across anchors of the datasets. Weights determined by cell similarity score (distance between cell and k nearest anchors) and anchor scores, so cells in the same neighborhood should have similar correction values.
     + If cell types are present in one dataset, but not the other, then the cells will still appear as a separate sample-specific cluster. Now, using our SCTransform object as input, let's perform the integration across conditions.
