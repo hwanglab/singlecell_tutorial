@@ -97,13 +97,10 @@ scina_field <- 'cellid_by_scina'
 pbmc <- AddMetaData(object=pbmc,metadata=pred_cell_ids$cell_labels,col.name=scina_field)
 Idents(pbmc) <- scina_field
 
-library(randomcoloR)
-
 DimPlot(pbmc, 
         reduction = "umap", 
-        label = FALSE, 
-        pt.size = 0.5, 
-        cols = distinctColorPalette(9))
+        label = TRUE, 
+        pt.size = 0.5)
 
 # back to seurat_cluster
 Idents(pbmc) <- "seurat_clusters"
@@ -117,7 +114,7 @@ save(pbmc, file = "filtered_gene_bc_matrices/hg19/04_pbmc3k_cellid.Rmd",compress
 ### Assigning cell type identity by feature barcode
 Recently, 10x Genomics provides [Feature Barcoding technology](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/feature-bc-analysis). A user chooses multiple antibodies. Both gene expression and suffice proteins shared the same cell barcode. We analyze each cell by profiling both gene expression and proteins at the cell suffice.
 
-### Things to know
+### Keep in mind
 - What is cell-type identification?
 - When cluster level cell type ID is useful?
 - When cell level ID is useful?

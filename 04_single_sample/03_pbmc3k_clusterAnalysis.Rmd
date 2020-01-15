@@ -73,8 +73,8 @@ FeaturePlot(pbmc, features = goi2)
 pbmc.markers.roc <- as.data.table(FindAllMarkers(pbmc, only.pos = TRUE, test.use='roc', min.pct = 0.25, logfc.threshold = 0.25))
 pbmc.markers.roc <- pbmc.markers.roc[!is.na(gene),]
 
-top3 <- pbmc.markers.roc[,.SD[order(-myAUC)][1],by='cluster']
-FeaturePlot(pbmc, features = sort(top3$gene))
+top1 <- pbmc.markers.roc[,.SD[order(-myAUC)][1],by='cluster']
+FeaturePlot(pbmc, features = sort(top1$gene))
 ```
 
 `DoHeatmap` generates an expression heatmap for given cells and features. In this case, we are plotting the top 10 markers (or all markers if less than 20) for each cluster.
@@ -85,7 +85,7 @@ DoHeatmap(pbmc, features = top10$gene) + NoLegend()
 
 Save DGE table.
 ```{r r.save}
-save(pbmc.markers,top10,file='filtered_gene_bc_matrices/hg19/03_pbmc3k_clusterAnalysis.rd',compress=TRUE)
+save(pbmc.markers,top10,top1,file='filtered_gene_bc_matrices/hg19/03_pbmc3k_clusterAnalysis.rd',compress=TRUE)
 ```
 
 ### Things to know

@@ -86,3 +86,4 @@ CombinePlots(plots = plots, ncol = 1)
 ### Things to explore
 - Pseudo time analysis (Slingshot)
 - ZINB DGE analysis (DEsingle)
+- Functional enrichment analysis (GSEA)

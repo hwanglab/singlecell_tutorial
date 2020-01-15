@@ -1,5 +1,5 @@
 ---
-title: "cellranger.mkfastq"
+title: "Cellranger mkfastq (BCL to FASTQ conversion)"
 author: "hongc2@ccf.org"
 date: "1/16/2020"
 output: html_document

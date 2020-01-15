@@ -12,10 +12,10 @@ opts_chunk$set(echo = TRUE, eval = TRUE, include=TRUE)
 Note that this tutorial is borrowed from [Seurat website](https://satijalab.org/seurat/pbmc3k_tutorial.html), compiled on Jan 9, 2020.
 
 ### Setup the Seurat Object
-For this tutorial, we will be analyzing the dataset of Peripheral Blood Mononuclear Cells (PBMC) freely available from 10X Genomics. 2,700 single cells were sequenced on the Illumina NextSeq 500. The raw data can be found [here](https://s3-us-west-2.amazonaws.com/10x.files/samples/cell/pbmc3k/pbmc3k_filtered_gene_bc_matrices.tar.gz).
+For this tutorial, we will be analyzing the dataset of Peripheral Blood Mononuclear Cells (PBMC) freely available from 10X Genomics. 2,700 single cells were sequenced on the Illumina NextSeq 500.
 
 ***
-*Task: Download the pbmc3k cellranger output file to the current directory where this Rmd file is located and unzip the file.*
+*Task: Find the zip file, `filtered_gene_bc_matrices.zip` at the working directory and unzip the file ("Extract Here"). For example, the extracted files location should be like this,*
 <details>
   <summary>where files should be located?</summary>
 ```{r sample_sheet, fig.align="center", out.width = "60%", eval=TRUE, fig.cap = 'Fig1. cellranger count output files in your current directory'}
@@ -25,7 +25,7 @@ include_graphics("media/01_download_pbmc_10x_mtrx_file.png")
 
 ***
 
-We start by reading in the data. The `Read10X` function reads in the output of the (cellranger)[https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/what-is-cell-ranger] pipeline from 10X, returning a unique molecular identifier (UMI) count matrix. The values in this matrix represent the number of molecules for each feature (i.e. gene; row) that are detected in each cell (column).
+We start by reading in the data. The `Read10X` function reads in the output of the [cellranger](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/what-is-cell-ranger) pipeline from 10X, returning a unique molecular identifier (UMI) count matrix. The values in this matrix represent the number of molecules for each feature (i.e. gene; row) that are detected in each cell (column).
 
 We next use the count matrix to create a `Seurat` object. The object serves as a container that contains both data (like the count matrix) and analysis (like PCA, or clustering results) for a single-cell dataset. For a technical discussion of the `Seurat` object structure, check out our GitHub Wiki. For example, the count matrix is stored in pbmc[["RNA"]]@counts.
 
@@ -94,7 +94,7 @@ In the example below, we visualize QC metrics, and use these to filter cells. Pl
 VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3, pt.size=0)
 ```
 
-By examining the violin plots, we perform QC. We filter cells that have unique feature counts over 2,500 or less than 200. We filter cells that have >10% mitochondrial counts.
+By examining the violin plots, we perform QC. We filter cells that have unique feature counts over 2,500 or less than 200. We filter cells that have >5% mitochondrial counts.
 ```{r after.qc.violin}
 pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
 
@@ -110,7 +110,7 @@ CombinePlots(plots = list(plot1, plot2))
 ```
 
 ### Normalization and scaling data
-Each cell has a different sequencing depth due to either technical variation or biological variation. Sequencing depth is highly correlated with UMI count but it is also varied depending on each gene. In general, we employ a global-scaling normalization method "LogNormalize" that normalizes the feature expression measurements for each cell by the total expression, multiplies this by a scale factor (10,000 by default), and log-transforms the result.
+Each cell has a different sequencing depth due to either technical variation or biological variation. <ins>Sequencing depth is highly correlated with UMI count but it is also varied depending on each gene</ins>. In general, we employ a global-scaling normalization method "LogNormalize" that normalizes the feature expression measurements for each cell by the total expression, multiplies this by a scale factor (10,000 by default), and log-transforms the result.
 
 ### Identification of highly variable features (feature selection)
 The number of genes (features) is over 20,000. After normalization, many gene abundance values are nearly similar across the cells. We want to select a subset of genes highly variable across the cells. In general, the normalized read count is z-transformed and select genes with top-K highest variance.
@@ -123,21 +123,21 @@ The three steps above are performed by `SCTransform`. The sctransform calculates
 pbmc <- SCTransform(pbmc, vars.to.regress = "percent.mt", verbose = FALSE)
 ```
 
-The results of sctransfrom are stored in the 'SCT' assay. The assay has 3 slots: pbmc[['SCT']]@counts, pbmc[['SCT']]@data, and  pbmc[['SCT']]@scale.data.
+The results of sctransfrom are stored in the 'SCT' assay. The assay has 3 slots: `pbmc[['SCT']]@counts`, `pbmc[['SCT']]@data`, and  `pbmc[['SCT']]@scale.data`.
 
-- pbmc[['SCT']]@scale.data contains the residuals (normalized values), and is used directly as input to <ins>PCA (i.e., dimensional reduction)</ins>. Please note that this matrix is non-sparse, and can, therefore, take up a lot of memory if stored for all genes. To save memory, we store these values only for variable genes, by setting the return.only.var.genes = TRUE by default in the SCTransform function call.
+- `pbmc[['SCT']]@scale.data` contains the residuals (normalized values), and is used directly as input to <ins>PCA (i.e., dimensional reduction)</ins>. Please note that this matrix is non-sparse, and can, therefore, take up a lot of memory if stored for all genes. To save memory, we store these values only for variable genes, by setting the `return.only.var.genes = TRUE` by default in the SCTransform function call.
 
-- The 'corrected' UMI counts are stored in pbmc[['SCT']]@counts which is adjusted by the Pearson residuals. This data is often used for <ins>a differential gene expression testing</ins>.
+- The 'corrected' UMI counts are stored in `pbmc[['SCT']]@counts` which is adjusted by the Pearson residuals. This data is often used for <ins>a differential gene expression testing</ins>.
 
-- We store log-normalized versions of these corrected counts in pbmc[['SCT']]@data, which are very helpful for <ins>a visualization of differential expression</ins>.
+- We store log-normalized versions of these corrected counts in `pbmc[['SCT']]@data`, which are very helpful for <ins>a visualization of differential expression</ins>.
 
 You can save the object at this point so that it can easily be loaded back in without having to rerun the computationally intensive steps performed above, or easily shared with collaborators.
 ```{r r.save}
 save(pbmc,file='filtered_gene_bc_matrices/hg19/01_pbmc3k_sctf.rd',compress=TRUE)
 ```
 
-### Three things you need to understand
-- Seurat Object structure
+### You should know
+- Seurat object structure
 - QC
 - Normalization
 - Save R environment variables

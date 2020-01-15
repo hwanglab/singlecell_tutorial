@@ -1,5 +1,5 @@
 ---
-title: "Cellranger Count (FASTQ to BAM and some basic single-cell data analysis)"
+title: "Cellranger Count (FASTQ to BAM conversion and some basic single-cell data analysis)"
 author: "hongc2@ccf.org"
 date: "1/16/2020"
 output: html_document

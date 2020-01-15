@@ -1,5 +1,5 @@
 ---
-title: "01. 10x Genomics Single Cell Sequencing (Chromium)"
+title: "10x Genomics Single Cell Sequencing (Chromium)"
 author: "hongc2@ccf.org"
 date: "01/16/2020"
 output: 
@@ -61,7 +61,7 @@ include_graphics("media/batch_effect.png")
 include_graphics("media/chromium_gelbead.PNG")
 ```
 - Poly(dT)-primer
-- Two additional primers for feature bardcoding to recognize cell-suffice proteins
+- Two additional primers for feature bardcoding to recognize cell-surface proteins
 - cell barcode and UMI
 
 #### GEMs

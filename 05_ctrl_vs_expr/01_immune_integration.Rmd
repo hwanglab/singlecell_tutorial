@@ -11,9 +11,10 @@ knitr::opts_chunk$set(echo = TRUE, eval = TRUE, include = TRUE)
 ```
 Change to the working directory!
 
-Reference:
+### Reference
 - https://satijalab.org/seurat/v3.1/immune_alignment.html
 - https://satijalab.org/seurat/v3.1/integration.html#sctransform
+- https://github.com/hbctraining/scRNA-seq/blob/master/lessons/06_SC_SCT_and_integration.md
 
 This tutorial walks through an alignment of two groups of PBMCs from [Kang et al, 2017](https://www.nature.com/articles/nbt.4042). In this experiment, PBMCs were split into a stimulated and control group and the stimulated group was treated with interferon beta. The response to interferon caused cell type-specific gene expression changes that make a joint analysis of all the data difficult, with cell clustering both by stimulation condition and by cell type. Here, we demonstrate our integration strategy, as described in [Stuart and Butler et al, 2018](https://www.biorxiv.org/content/early/2018/11/02/460147), for performing integrated analyses to promote the identification of common cell types and enable comparative analyses. While this example demonstrates the integration of two datasets (conditions), these methods have been extended to multiple datasets. Refer to the [workflow](https://satijalab.org/seurat/pancreas_integration_label_transfer.html) that provides an example of integrating four pancreatic islet datasets.
 
@@ -115,6 +116,7 @@ Perform canonical correlation analysis (CCA):
     + NOTE: Transformation of each cell uses a weighted average of the two cells of each anchor across anchors of the datasets. Weights determined by cell similarity score (distance between cell and k nearest anchors) and anchor scores, so cells in the same neighborhood should have similar correction values.
     + If cell types are present in one dataset, but not the other, then the cells will still appear as a separate sample-specific cluster. Now, using our SCTransform object as input, let's perform the integration across conditions.
 
+This CCA integration will take 5+ min.
 ```{r ce_cca, warning=FALSE}
 immune.anchors <- FindIntegrationAnchors(object.list = ifnb.list,
                                          normalization.method = "SCT",

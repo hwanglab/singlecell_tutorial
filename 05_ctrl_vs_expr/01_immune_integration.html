@@ -185,8 +185,15 @@ summary {
 
 
 <p>Change to the working directory!</p>
-<p>Reference: - <a href="https://satijalab.org/seurat/v3.1/immune_alignment.html" class="uri">https://satijalab.org/seurat/v3.1/immune_alignment.html</a> - <a href="https://satijalab.org/seurat/v3.1/integration.html#sctransform" class="uri">https://satijalab.org/seurat/v3.1/integration.html#sctransform</a></p>
+<div id="reference" class="section level3">
+<h3>Reference</h3>
+<ul>
+<li><a href="https://satijalab.org/seurat/v3.1/immune_alignment.html" class="uri">https://satijalab.org/seurat/v3.1/immune_alignment.html</a></li>
+<li><a href="https://satijalab.org/seurat/v3.1/integration.html#sctransform" class="uri">https://satijalab.org/seurat/v3.1/integration.html#sctransform</a></li>
+<li><a href="https://github.com/hbctraining/scRNA-seq/blob/master/lessons/06_SC_SCT_and_integration.md" class="uri">https://github.com/hbctraining/scRNA-seq/blob/master/lessons/06_SC_SCT_and_integration.md</a></li>
+</ul>
 <p>This tutorial walks through an alignment of two groups of PBMCs from <a href="https://www.nature.com/articles/nbt.4042">Kang et al, 2017</a>. In this experiment, PBMCs were split into a stimulated and control group and the stimulated group was treated with interferon beta. The response to interferon caused cell type-specific gene expression changes that make a joint analysis of all the data difficult, with cell clustering both by stimulation condition and by cell type. Here, we demonstrate our integration strategy, as described in <a href="https://www.biorxiv.org/content/early/2018/11/02/460147">Stuart and Butler et al, 2018</a>, for performing integrated analyses to promote the identification of common cell types and enable comparative analyses. While this example demonstrates the integration of two datasets (conditions), these methods have been extended to multiple datasets. Refer to the <a href="https://satijalab.org/seurat/pancreas_integration_label_transfer.html">workflow</a> that provides an example of integrating four pancreatic islet datasets.</p>
+</div>
 <div id="integration-goals" class="section level3">
 <h3>Integration goals</h3>
 <p>The following tutorial is designed to give you an overview of the kinds of comparative analyses on complex cell types that are possible using the Seurat integration procedure. Here, we address three main goals:</p>
@@ -241,7 +248,7 @@ data(&quot;ifnb&quot;)</code></pre>
 ifnb.list &lt;- SplitObject(ifnb, split.by = &quot;stim&quot;)
 ifnb.list &lt;- lapply(X = ifnb.list, function(seu) {
     message(&quot;This run will take 5+ min ...&quot;)
-    seu &lt;- NormalizeData(seu, verbose = TRUE)
+    seu &lt;- NormalizeData(seu, verbose = TRUE) #the normalization result will be stored into .data slot.
     seu &lt;- CellCycleScoring(seu, g2m.features=g2m_genes, s.features=s_genes)
     seu &lt;- SCTransform(seu,verbose = FALSE)
     return(seu)
@@ -293,6 +300,7 @@ Fig1. Stuart T and Butler A, et. al. Comprehensive integration of single cell da
 <li>If cell types are present in one dataset, but not the other, then the cells will still appear as a separate sample-specific cluster. Now, using our SCTransform object as input, let’s perform the integration across conditions.</li>
 </ul></li>
 </ul>
+<p>This CCA integration will take 5+ min.</p>
 <pre class="r"><code>immune.anchors &lt;- FindIntegrationAnchors(object.list = ifnb.list,
                                          normalization.method = &quot;SCT&quot;,
                                          anchor.features = sc.features,
@@ -318,20 +326,20 @@ immune.combined &lt;- RunUMAP(immune.combined, dims = 1:20)</code></pre>
 <pre><code>## Warning: The default method for RunUMAP has changed from calling Python UMAP via reticulate to the R-native UWOT using the cosine metric
 ## To use Python UMAP via reticulate, set umap.method to 'umap-learn' and metric to 'correlation'
 ## This message will be shown once per session</code></pre>
-<pre><code>## 21:17:44 UMAP embedding parameters a = 0.9922 b = 1.112</code></pre>
-<pre><code>## 21:17:44 Read 13999 rows and found 20 numeric columns</code></pre>
-<pre><code>## 21:17:44 Using Annoy for neighbor search, n_neighbors = 30</code></pre>
-<pre><code>## 21:17:44 Building Annoy index with metric = cosine, n_trees = 50</code></pre>
+<pre><code>## 07:38:54 UMAP embedding parameters a = 0.9922 b = 1.112</code></pre>
+<pre><code>## 07:38:54 Read 13999 rows and found 20 numeric columns</code></pre>
+<pre><code>## 07:38:54 Using Annoy for neighbor search, n_neighbors = 30</code></pre>
+<pre><code>## 07:38:54 Building Annoy index with metric = cosine, n_trees = 50</code></pre>
 <pre><code>## 0%   10   20   30   40   50   60   70   80   90   100%</code></pre>
 <pre><code>## [----|----|----|----|----|----|----|----|----|----|</code></pre>
 <pre><code>## **************************************************|
-## 21:17:46 Writing NN index file to temp file C:\Users\hongc2\AppData\Local\Temp\Rtmp2feHus\file1c274203e3aa7
-## 21:17:46 Searching Annoy index using 1 thread, search_k = 3000
-## 21:17:52 Annoy recall = 100%
-## 21:17:52 Commencing smooth kNN distance calibration using 1 thread
-## 21:17:54 Initializing from normalized Laplacian + noise
-## 21:17:54 Commencing optimization for 200 epochs, with 591928 positive edges
-## 21:18:12 Optimization finished</code></pre>
+## 07:38:57 Writing NN index file to temp file C:\Users\hongc2\AppData\Local\Temp\RtmpwjWQeS\filef1b441501506
+## 07:38:57 Searching Annoy index using 1 thread, search_k = 3000
+## 07:39:03 Annoy recall = 100%
+## 07:39:04 Commencing smooth kNN distance calibration using 1 thread
+## 07:39:05 Initializing from normalized Laplacian + noise
+## 07:39:06 Commencing optimization for 200 epochs, with 591928 positive edges
+## 07:39:26 Optimization finished</code></pre>
 <pre class="r"><code># immune.combined &lt;- FindNeighbors(immune.combined, reduction = &quot;pca&quot;, dims = 1:20)
 # immune.combined &lt;- FindClusters(immune.combined, resolution = 0.5)
 

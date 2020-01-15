@@ -5,7 +5,7 @@ date: "1/16/2020"
 output:
   html_document:
     df_print: paged
-objectives: Download 10x PBMC data for input; Install R modules required
+objectives: Program Setup
 ---
 
 ```{r setup, include=FALSE}
@@ -27,7 +27,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### To install R modules to accomplish the experiments in the tutorial
 - Launch Rstudio
-- Install the following R library modules,
+- Install the following R library modules
+- Note that Rstudio may ask you whether user want to update an R module. Answer 'N' to all the questions.
 ```{r r_module_setup, echo=TRUE, eval=FALSE}
 install.packages('BiocManager')
 library("BiocManager")
@@ -51,5 +52,5 @@ for (pkg in tutorial_pkgs) {
 
 ### Things to know
 - Installing R libraries
-- `getwd()`
-- `setwd()`
+- `getwd()` to find the current working directory
+- `setwd()` to change the working directory
